@@ -1,11 +1,16 @@
 "use strict";
 
 var canvas = document.createElement("canvas"),
-    ctx = canvas.getContext("2d");
+    ctx = canvas.getContext("2d"),
+    gamebar = document.getElementById("gamebar"),
+    content = document.getElementById("content");
+
+var screen = boardSize();
+var dist;
 
 var img = new Image();
 img.onload = function () {
-    setup(960, 800);
+    setup(screen.sizeX, screen.sizeY);
 };
 img.src = "assets/sheet.png";
 
@@ -28,93 +33,105 @@ var faces = {
     "8": [112, 16]
 };
 
-var B_HEIGHT = 16,
-    B_WIDTH = 16,
-    MINE_CHANCE = 1 / 8;
+const [B_HEIGHT, B_WIDTH] = [16, 16];
 
 var boxes = [];
+var mineChance = 1 / 5;
+var loss = false;
+
+function boardSize() {
+    var x = window.innerWidth,
+        y = window.innerHeight - gamebar.clientHeight;
+
+    x -= x % 16;
+    y -= y % 16;
+
+    return {
+        sizeX: x,
+        sizeY: y 
+    };
+}
 
 function Box() {
-    var xpos,
-        ypos;
-
-    var isMine,
-        flagged,
-        clicked,
-        exposed = false;
+    var xpos, ypos;
+    var isMine, flagged, clicked, exposed = false;
 
     this.state = faces.box;
 }
 
-var header = function () {
-    var bar = document.createElement("div");
-    bar.setAttribute("id", "gamebar");
+gamebar.appendChild(function () {
+    var face = document.createElement("div");
+    face.setAttribute("class", "face");
+    face.setAttribute("id", "normal");
 
-    var smiley = function () {
-        var face = document.createElement("div");
-        face.setAttribute("class", "face");
-        face.setAttribute("id", "normal");
+    face.addEventListener("mousedown", function () {
+        face.id = "pressed";
+    }, false);
 
-        face.addEventListener("mousedown", function () {
-            face.id = "pressed";
-        }, false);
-
-        face.addEventListener("mouseleave", function () {
-            if (face.id === "pressed") {
-                face.id = "normal";
-            }
-        }, false);
-
-        face.addEventListener("click", function () {
+    face.addEventListener("mouseleave", function () {
+        if (face.id == "pressed") {
             face.id = "normal";
-        }, false);
+        }
+    }, false);
 
-        return face;
-    }
+    face.addEventListener("click", function () {
+        face.id = "normal";
+        var clear = function () {
+            loss = false;
+            boxes = [];
+            ctx.clearRect(0, 0, screen.sizeX, screen.sizeY);
+            setup(screen.sizeX, screen.sizeY);
+        }();
+    }, false);
 
-    bar.appendChild(smiley());
-    return bar;
-}
+    return face;
+}());
 
 function setup(width, height) {
-    var content = document.createElement("div");
-    content.setAttribute("id", "content");
     canvas.width = width;
     canvas.height = height;
 
-    content.appendChild(canvas);
+    if (canvas) content.appendChild(canvas);
 
-    document.body.appendChild(header());
     document.body.appendChild(content);
 
+    if(!dist) {
+        content.style.marginTop = function () {
+            dist = window.innerHeight - document.body.clientHeight;
+            return dist / 2 + "px";
+        }();
+    }
+
     canvas.addEventListener("click", function (evt) {
+        if (loss) return;
+
         var mousePos = function (evt) {
             var rect = canvas.getBoundingClientRect();
             return {
                 x: evt.clientX - rect.left,
                 y: evt.clientY - rect.top
             };
-        }
-
-        var pos = mousePos(evt);
+        }(evt);
 
         var fieldPos = {
-            x: Math.floor(pos.x / 16) * 16,
-            y: Math.floor(pos.y / 16) * 16
+            x: Math.floor(mousePos.x / 16) * 16,
+            y: Math.floor(mousePos.y / 16) * 16
         };
 
         var b = getBox(fieldPos.x, fieldPos.y);
+        b.clicked = true;
+
         if (b.isMine) {
             b.state = faces.loss;
-            b.clicked = true;
         }
+
         if (b.state == faces.box) {
             b.state = faces.press;
-            b.clicked = true;
         }
 
         determineStates(b);
     }, false);
+
     drawGrid();
 }
 
@@ -128,10 +145,9 @@ function drawGrid() {
 
 function drawBox(x, y) {
     var b = new Box();
-    b.xpos = x;
-    b.ypos = y;
+    [b.xpos, b.ypos] = [x, y];
 
-    if (Math.random() < MINE_CHANCE) b.isMine = true;
+    if (Math.random() < mineChance) b.isMine = true;
 
     ctx.drawImage(img, b.state[0], b.state[1], B_WIDTH, B_HEIGHT, x, y, B_WIDTH, B_HEIGHT);
 
@@ -146,10 +162,9 @@ function getBox(x, y) {
 }
 
 function getNeighbors(box) {
-    var x = box.xpos,
-        y = box.ypos;
-
+    var [x, y] = [box.xpos, box.ypos];
     var nearby = [];
+
     for (var i = -1; i < 2; i++) {
         for (var j = -1; j < 2; j++) {
             nearby.push([x + i * 16, y + j * 16]);
@@ -160,7 +175,7 @@ function getNeighbors(box) {
     var nearBounds = nearby.map(function (b) {
         return getBox(b[0], b[1]);
     }).filter(function (b) {
-        return b
+        return b;
     });
 
     return nearBounds;
@@ -171,12 +186,13 @@ function determineStates(box) {
         box.state = faces.loss;
         redrawBox(box);
         exposeField();
+        loss = true;
     } else {
         var neighbors = getNeighbors(box).filter(function (b) {
             return !b.exposed;
         });
-        var nearbyMines = 0;
 
+        var nearbyMines = 0;
         for (var i = 0; i < neighbors.length; i++) {
             if (neighbors[i].isMine) nearbyMines++;
         }
@@ -185,6 +201,7 @@ function determineStates(box) {
             box.state = faces[nearbyMines];
         } else {
             box.state = faces.press;
+
             for (var i = 0; i < neighbors.length; i++) {
                 neighbors[i].clicked = true;
                 box.exposed = true;
@@ -202,9 +219,12 @@ function redrawBox(box) {
 
 function exposeField() {
     for (var i = 0; i < boxes.length; i++) {
+        if (boxes[i].flagged && !boxes[i].isMine) {
+            boxes[i].state = faces.loss;
+        }
         if (!boxes[i].clicked && boxes[i].isMine) {
             boxes[i].state = faces.mine;
-            redrawBox(boxes[i]);
         }
+        redrawBox(boxes[i]);
     }
 }
