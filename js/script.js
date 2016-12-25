@@ -1,9 +1,9 @@
 "use strict";
 
-var canvas = document.createElement("canvas"),
-    ctx = canvas.getContext("2d"),
-    gamebar = document.getElementById("gamebar"),
-    content = document.getElementById("content");
+var gamebar = document.getElementById("gamebar"),
+    content = document.getElementById("content"),
+    canvas = content.firstChild,
+    ctx = canvas.getContext("2d");
 
 var screen = boardSize();
 var dist;
@@ -14,7 +14,7 @@ img.onload = function () {
 };
 img.src = "assets/sheet.png";
 
-var faces = { 
+var faces = {
     box: [0, 0],
     press: [16, 0],
     flag: [32, 0],
@@ -48,7 +48,7 @@ function boardSize() {
 
     return {
         sizeX: x,
-        sizeY: y 
+        sizeY: y
     };
 }
 
@@ -87,13 +87,57 @@ gamebar.appendChild(function () {
     return face;
 }());
 
+var fieldPos;
+canvas.addEventListener("mousemove", function (evt) {
+    var mousePos = function (evt) {
+        var rect = canvas.getBoundingClientRect();
+        return {
+            x: evt.clientX - rect.left,
+            y: evt.clientY - rect.top
+        };
+    }(evt);
+
+    fieldPos = {
+        x: Math.floor(mousePos.x / 16) * 16,
+        y: Math.floor(mousePos.y / 16) * 16
+    };
+}, false);
+
+canvas.addEventListener("contextmenu", function (e) {
+    e.preventDefault();
+    if (loss) return;
+
+    var b = getBox(fieldPos.x, fieldPos.y);
+    if (b.exposed) return;
+
+    // flag swapping
+    b.flagged = b.flagged ? false : true;
+    b.state = b.flagged ? faces.flag : faces.box;
+
+    redrawBox(b);
+}, false);
+
+canvas.addEventListener("click", function () {
+    if (loss) return;
+
+    var b = getBox(fieldPos.x, fieldPos.y);
+    if (b.exposed || b.flagged) return;
+    b.clicked = true;
+
+    if (b.isMine) {
+        b.state = faces.loss;
+    }
+
+    if (b.state == faces.box) {
+        b.state = faces.press;
+    }
+
+    determineStates(b);
+}, false);
+
 function setup(width, height) {
     canvas.width = width;
     canvas.height = height;
-
-    if (canvas) content.appendChild(canvas);
-
-    document.body.appendChild(content);
 
     if(!dist) {
         content.style.marginTop = function () {
@@ -101,36 +145,6 @@ function setup(width, height) {
             return dist / 2 + "px";
         }();
     }
-
-    canvas.addEventListener("click", function (evt) {
-        if (loss) return;
-
-        var mousePos = function (evt) {
-            var rect = canvas.getBoundingClientRect();
-            return {
-                x: evt.clientX - rect.left,
-                y: evt.clientY - rect.top
-            };
-        }(evt);
-
-        var fieldPos = {
-            x: Math.floor(mousePos.x / 16) * 16,
-            y: Math.floor(mousePos.y / 16) * 16
-        };
-
-        var b = getBox(fieldPos.x, fieldPos.y);
-        b.clicked = true;
-
-        if (b.isMine) {
-            b.state = faces.loss;
-        }
-
-        if (b.state == faces.box) {
-            b.state = faces.press;
-        }
-
-        determineStates(b);
-    }, false);
 
     drawGrid();
 }
@@ -183,10 +197,9 @@ function getNeighbors(box) {
 
 function determineStates(box) {
     if (box.clicked && box.isMine) {
-        box.state = faces.loss;
-        redrawBox(box);
-        exposeField();
         loss = true;
+        box.state = faces.loss;
+        exposeField();
     } else {
         var neighbors = getNeighbors(box).filter(function (b) {
             return !b.exposed;
@@ -201,15 +214,21 @@ function determineStates(box) {
             box.state = faces[nearbyMines];
         } else {
             box.state = faces.press;
+            box.clicked = true;
 
             for (var i = 0; i < neighbors.length; i++) {
-                neighbors[i].clicked = true;
-                box.exposed = true;
+                neighbors[i].exposed = true;
                 determineStates(neighbors[i]);
             }
         }
     }
-    redrawBox(box);
+
+    if (!box.flagged) {
+        redrawBox(box);
+    } else {
+        box.exposed = false;
+        box.clicked = false;
+    }
 }
 
 function redrawBox(box) {
@@ -219,11 +238,10 @@ function redrawBox(box) {
 
 function exposeField() {
     for (var i = 0; i < boxes.length; i++) {
-        if (boxes[i].flagged && !boxes[i].isMine) {
-            boxes[i].state = faces.loss;
-        }
-        if (!boxes[i].clicked && boxes[i].isMine) {
-            boxes[i].state = faces.mine;
+        if (boxes[i].isMine && !boxes[i].flagged) {
+            boxes[i].state = boxes[i].clicked ? faces.loss : faces.mine;
+        } else if (boxes[i].flagged && !boxes[i].isMine) {
+            boxes[i].state = faces.wrong;
         }
         redrawBox(boxes[i]);
     }
