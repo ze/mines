@@ -37,7 +37,7 @@ const [B_HEIGHT, B_WIDTH] = [16, 16];
 
 var boxes = [];
 var mineChance = 1 / 5;
-var loss = false;
+var gameEnd = false;
 
 function boardSize() {
     var x = window.innerWidth,
@@ -59,33 +59,51 @@ function Box() {
     this.state = faces.box;
 }
 
-gamebar.appendChild(function () {
-    var face = document.createElement("div");
-    face.setAttribute("class", "face");
-    face.setAttribute("id", "normal");
+(function () {
+    var logo = new Image();
+    logo.setAttribute("id", "logo");
+    logo.onload = function () {
+        gamebar.appendChild(logo);
 
-    face.addEventListener("mousedown", function () {
-        face.id = "pressed";
-    }, false);
+        gamebar.appendChild(function () {
+            var face = document.createElement("div");
+            face.setAttribute("class", "face");
+            face.setAttribute("id", "normal");
 
-    face.addEventListener("mouseleave", function () {
-        if (face.id == "pressed") {
-            face.id = "normal";
-        }
-    }, false);
+            face.addEventListener("mousedown", function () {
+                face.id = "pressed";
+            }, false);
 
-    face.addEventListener("click", function () {
-        face.id = "normal";
-        var clear = function () {
-            loss = false;
-            boxes = [];
-            ctx.clearRect(0, 0, screen.sizeX, screen.sizeY);
-            setup(screen.sizeX, screen.sizeY);
-        }();
-    }, false);
+            face.addEventListener("mouseleave", function () {
+                if (face.id == "pressed") {
+                    face.id = "normal";
+                }
+            }, false);
 
-    return face;
-}());
+            face.addEventListener("click", function () {
+                face.id = "normal";
+                var clear = function () {
+                    gameEnd = false;
+                    boxes = [];
+                    ctx.clearRect(0, 0, screen.sizeX, screen.sizeY);
+                    setup(screen.sizeX, screen.sizeY);
+                }();
+            }, false);
+
+            return face;
+        }());
+
+        /*
+        gamebar.appendChild(function () {
+            var settings = document.createElement("div");
+            settings.setAttribute("id", "settings");
+
+            return settings;
+        }());
+        */
+    };
+    logo.src = "assets/logo.png";
+})();
 
 var fieldPos;
 canvas.addEventListener("mousemove", function (evt) {
@@ -105,20 +123,21 @@ canvas.addEventListener("mousemove", function (evt) {
 
 canvas.addEventListener("contextmenu", function (e) {
     e.preventDefault();
-    if (loss) return;
+    if (gameEnd) return;
 
     var b = getBox(fieldPos.x, fieldPos.y);
-    if (b.exposed) return;
+    if (b.exposed || b.clicked) return;
 
     // flag swapping
     b.flagged = b.flagged ? false : true;
     b.state = b.flagged ? faces.flag : faces.box;
 
     redrawBox(b);
+    victory();
 }, false);
 
 canvas.addEventListener("click", function () {
-    if (loss) return;
+    if (gameEnd) return;
 
     var b = getBox(fieldPos.x, fieldPos.y);
     if (b.exposed || b.flagged) return;
@@ -133,6 +152,7 @@ canvas.addEventListener("click", function () {
     }
 
     determineStates(b);
+    victory();
 }, false);
 
 function setup(width, height) {
@@ -197,7 +217,7 @@ function getNeighbors(box) {
 
 function determineStates(box) {
     if (box.clicked && box.isMine) {
-        loss = true;
+        gameEnd = true;
         box.state = faces.loss;
         exposeField();
     } else {
@@ -245,4 +265,16 @@ function exposeField() {
         }
         redrawBox(boxes[i]);
     }
+}
+
+function victory() {
+    for (var i = 0; i < boxes.length; i++) {
+        if (!boxes[i].flagged && boxes[i].isMine) return;
+        if (!boxes[i].isMine && !(boxes[i].exposed || boxes[i].clicked)) return;
+    }
+
+    var smiley = document.querySelector(".face");
+    smiley.id = "shades";
+
+    gameEnd = true;
 }
