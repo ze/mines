@@ -5,17 +5,17 @@ var gamebar = document.querySelector("#gamebar"),
     canvas = content.firstChild,
     ctx = canvas.getContext("2d");
 
-var screen = screenSize();
+var screen = gameSize();
 var dist;
 
 var img = new Image();
 img.onload = function () {
-    setup(screen.sizeX, screen.sizeY);
+    setup(screen.x, screen.y);
 };
 img.src = "assets/sheet.png";
 
 // sprite coordinates
-var faces = {
+const faces = {
     box: [0, 0],
     press: [16, 0],
     flag: [32, 0],
@@ -43,34 +43,28 @@ var gameEnd = false;
 // game timer
 var timer = {
     time: 0,
-    start: function () {
+    start() {
         this.running = true;
         this.interval = setInterval(() => this.time++, 1000);
     },
-    end: function () {
+    stop() {
         this.running = false;
         clearInterval(this.interval);
     },
-    clear: function () {
-        this.time = 0;
-    },
-    format: function () {
+    clear() { this.time = 0; },
+    format() {
         return Math.floor(this.time / 60) + "m " + this.time % 60 + "s";
     },
     running: false
 };
 
-function screenSize() {
-    var x = window.innerWidth,
-        y = window.innerHeight - gamebar.clientHeight;
+function gameSize(x = window.innerWidth,
+                  y = window.innerHeight - gamebar.clientHeight) {
 
     x -= x % 16;
     y -= y % 16;
 
-    return {
-        sizeX: x,
-        sizeY: y
-    };
+    return {x, y};
 }
 
 function Box() {
@@ -80,7 +74,6 @@ function Box() {
     this.state = faces.box;
 }
 
-// gamebar features
 (function () {
     var logo = new Image();
     logo.setAttribute("id", "logo");
@@ -107,11 +100,18 @@ function Box() {
                 var clear = function () {
                     gameEnd = false;
                     boxes = [];
-                    ctx.clearRect(0, 0, screen.sizeX, screen.sizeY);
-                    screen = screenSize();
+                    timer.clear();
+
+                    ctx.clearRect(0, 0, screen.x, screen.y);
+
                     dist = null;
                     content.style.marginTop = "0px";
-                    setup(screen.sizeX, screen.sizeY);
+
+                    var fit = gameSize();
+                    var resizeX = fit.x < screen.x ? fit.x : screen.x;
+                    var resizeY = fit.y < screen.y ? fit.y : screen.y;
+
+                    setup(resizeX, resizeY);
                 }();
             }, false);
 
@@ -121,7 +121,7 @@ function Box() {
         var display = function (input) {
             var disp = document.querySelector("#display");
             if (!disp) {
-                var disp = document.createElement("div");
+                disp = document.createElement("div");
                 disp.setAttribute("id", "display");
                 disp.style.display = "block";
                 disp.addEventListener("click", function (e) {
@@ -141,7 +141,7 @@ function Box() {
             disp.appendChild(input.body);
 
             if (old && input.heading === old || disp.style.display == "none") {
-                var vis = disp.style.display;
+                let vis = disp.style.display;
                 vis = vis == "none" ? "block" : "none";
                 disp.style.display = vis;
             }
@@ -240,7 +240,7 @@ function setup(width, height) {
     canvas.height = height;
     boxes = [];
 
-    if(!dist) {
+    if (!dist) {
         content.style.marginTop = function () {
             dist = window.innerHeight - document.body.clientHeight;
             return dist / 2 + "px";
@@ -252,8 +252,8 @@ function setup(width, height) {
 
 // populates canvas with boxes
 function drawGrid() {
-    for (var i = 0; i < canvas.width; i += B_WIDTH) {
-        for (var j = 0; j < canvas.height; j += B_HEIGHT) {
+    for (let i = 0; i < canvas.width; i += B_WIDTH) {
+        for (let j = 0; j < canvas.height; j += B_HEIGHT) {
             drawBox(i, j);
         }
     }
@@ -273,7 +273,7 @@ function drawBox(x, y) {
 
 // get box at position
 function getBox(x, y) {
-    for (var i = 0; i < boxes.length; i++) {
+    for (let i = 0; i < boxes.length; i++) {
         if (boxes[i].xpos == x && boxes[i].ypos == y) return boxes[i];
     }
     return null;
@@ -284,12 +284,12 @@ function getNeighbors(box) {
     var [x, y] = [box.xpos, box.ypos];
     var nearby = [];
 
-    for (var i = -1; i < 2; i++) {
-        for (var j = -1; j < 2; j++) {
+    for (let i = -1; i < 2; i++) {
+        for (let j = -1; j < 2; j++) {
             nearby.push([x + i * 16, y + j * 16]);
         }
     }
-    nearby.splice(4, 1); // remove coordinates that contain self
+    nearby.splice(4, 1); // remove coordinates that contain this box
 
     var nearBounds = nearby.map(function (b) {
         return getBox(b[0], b[1]);
@@ -305,7 +305,7 @@ function determineState(box) {
     if (box.clicked && box.isMine) {
         gameEnd = true;
 
-        timer.end();
+        timer.stop();
 
         box.state = faces.loss;
         document.querySelector(".face").id = "dead";
@@ -323,7 +323,7 @@ function gridSpread(box) {
     });
 
     var nearbyMines = 0;
-    for (var i = 0; i < neighbors.length; i++) {
+    for (let i = 0; i < neighbors.length; i++) {
         if (neighbors[i].isMine) nearbyMines++;
     }
 
@@ -332,7 +332,7 @@ function gridSpread(box) {
     } else {
         box.state = faces.press;
 
-        for (var i = 0; i < neighbors.length; i++) {
+        for (let i = 0; i < neighbors.length; i++) {
             neighbors[i].exposed = true;
             gridSpread(neighbors[i]);
         }
@@ -352,7 +352,7 @@ function redrawBox(box) {
 }
 
 function exposeField() {
-    for (var i = 0; i < boxes.length; i++) {
+    for (let i = 0; i < boxes.length; i++) {
         if (boxes[i].isMine && !boxes[i].flagged) {
             boxes[i].state = boxes[i].clicked ? faces.loss : faces.mine;
         } else if (boxes[i].flagged && !boxes[i].isMine) {
@@ -363,20 +363,20 @@ function exposeField() {
 }
 
 function victory() {
-    for (var i = 0; i < boxes.length; i++) {
+    for (let i = 0; i < boxes.length; i++) {
         if (!boxes[i].flagged && boxes[i].isMine) return;
         if (!boxes[i].isMine && !(boxes[i].exposed || boxes[i].clicked)) return;
     }
 
     document.querySelector(".face").id = "shades";
 
-    timer.end();
+    timer.stop();
     gameEnd = true;
 }
 
 function gameInfo() {
     var [totalMines, totalClicks, flagged] = [0, 0, 0];
-    for (var i = 0; i < boxes.length; i++) {
+    for (let i = 0; i < boxes.length; i++) {
         if (boxes[i].isMine) totalMines++;
         if (boxes[i].clicked) totalClicks++;
         if (boxes[i].flagged) flagged++;
@@ -398,7 +398,7 @@ function gameInfo() {
     };
 
     var table = document.createElement("table");
-    for (var prop in info) {
+    for (let prop in info) {
         var row = document.createElement("tr");
         var desc = document.createElement("td");
         var val = document.createElement("td");
@@ -410,7 +410,6 @@ function gameInfo() {
     }
 
     return {
-        id: "infopanel",
         heading: "Game Information",
         body: table
     };
@@ -421,7 +420,7 @@ function gameSettings() {
     form.action = "javascript:void(0);";
     form.method = "get";
 
-    var input = function (type, name, value, label) {
+    var input = function (type, name, value, max, label) {
         var lab = document.createElement("label");
         lab.innerHTML = label;
 
@@ -429,13 +428,14 @@ function gameSettings() {
         i.type = type;
         i.name = name;
         i.value = value;
-        i.min = 0;
-        i.max = 100;
 
         i.oninput = function () {
             i.value = i.value.replace(/-/g, "");
-            if (i.value > 100) {
-                i.value = 100;
+            if (i.value == "0") {
+                i.value = 1;
+            }
+            if (i.value > max) {
+                i.value = max;
             }
         };
 
@@ -445,17 +445,19 @@ function gameSettings() {
         };
     };
 
+    var fit = gameSize();
+
     var fields = {
-        width: input("number", "width", "10", "Width"),
-        height: input("number", "height", "10", "Height"),
-        mines: input("number", "mines", "5", "Chance for mines (1/n)"),
+        width: input("number", "width", 10, fit.x / 16, "Width"),
+        height: input("number", "height", 10, fit.y / 16, "Height"),
+        mines: input("number", "mines", 5, 25, "Chance for mines (1/n)"),
     };
 
     var button = document.createElement("input");
     button.type = "submit";
     button.value = "Generate";
 
-    for (var field in fields) {
+    for (let field in fields) {
         form.appendChild(fields[field].header);
         form.appendChild(fields[field].input);
     }
@@ -471,11 +473,14 @@ function gameSettings() {
 
         dist = null;
         content.style.marginTop = "0px";
-        setup(gameWidth,gameHeight);
+
+        screen = gameSize(gameWidth, gameHeight);
+        setup(screen.x, screen.y);
+
         document.querySelector("#display").style.display = "none";
     }, false);
+
     return {
-        id: "settingspanel",
         heading: "Settings",
         body: form
     };
