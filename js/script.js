@@ -37,7 +37,7 @@ const faces = {
 const [B_WIDTH, B_HEIGHT] = [16, 16];
 
 var boxes = [];
-var mineChance = 1 / 5;
+var mineChance = 1 / 6;
 var gameEnd = false;
 
 // game timer
@@ -104,14 +104,8 @@ function Box() {
 
                     ctx.clearRect(0, 0, screen.x, screen.y);
 
-                    dist = null;
                     content.style.marginTop = "0px";
-
-                    var fit = gameSize();
-                    var resizeX = fit.x < screen.x ? fit.x : screen.x;
-                    var resizeY = fit.y < screen.y ? fit.y : screen.y;
-
-                    setup(resizeX, resizeY);
+                    setup(screen.x, screen.y);
                 }();
             }, false);
 
@@ -242,10 +236,16 @@ function setup(width, height) {
 
     if (!dist) {
         content.style.marginTop = function () {
-            dist = window.innerHeight - document.body.clientHeight;
-            return dist / 2 + "px";
+            if (gameSize().y >= screen.y) {
+                dist = (window.innerHeight - document.body.clientHeight) / 2;
+            } else {
+                dist = 5;
+            }
+
+            return dist + "px";
         }();
     }
+    dist = null;
 
     drawGrid();
 }
@@ -387,10 +387,10 @@ function gameInfo() {
         "Total Clicks": totalClicks,
         "Time Played": timer.format(),
         "Clicks per Second": function () {
-            var cps = timer.time != 0 ? totalClicks / timer.time : 0
+            var cps = timer.time != 0 ? totalClicks / timer.time : 0;
             return cps.toFixed(2);
         }(),
-        "Progress" : function () {
+        "Progress": function () {
             var percentage = flagged / totalMines;
             percentage *= 100;
             return percentage.toFixed(2) + "%";
@@ -445,12 +445,11 @@ function gameSettings() {
         };
     };
 
-    var fit = gameSize();
-
+    var [x, y] = [Math.round(screen.x / 8), Math.round(screen.y / 8)];
     var fields = {
-        width: input("number", "width", 10, fit.x / 16, "Width"),
-        height: input("number", "height", 10, fit.y / 16, "Height"),
-        mines: input("number", "mines", 5, 25, "Chance for mines (1/n)"),
+        width: input("number", "width", 10, x, "Width"),
+        height: input("number", "height", 10, y, "Height"),
+        mines: input("number", "mines", 6, 25, "Chance for mines (1/n)"),
     };
 
     var button = document.createElement("input");
@@ -471,9 +470,7 @@ function gameSettings() {
         gameEnd = false;
         document.querySelector(".face").id = "normal";
 
-        dist = null;
         content.style.marginTop = "0px";
-
         screen = gameSize(gameWidth, gameHeight);
         setup(screen.x, screen.y);
 
