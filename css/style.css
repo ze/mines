@@ -58,7 +58,7 @@ p {
     right: .5em;
     top: 3em;
 
-    min-width: 20em;
+    min-width: 25%;
 
     border: 1px solid black;
     border-radius: 2px;
@@ -89,7 +89,8 @@ input {
 }
 
 input[type=number] {
-    width: 8%;
+    max-width: 10%;
+    min-width: 8%;
     padding: .4em;
     border-bottom: 1px solid black;
     background: transparent;

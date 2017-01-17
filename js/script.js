@@ -59,7 +59,7 @@ var timer = {
 };
 
 function gameSize(x = window.innerWidth,
-                  y = window.innerHeight - gamebar.clientHeight) {
+        y = window.innerHeight - gamebar.clientHeight) {
 
     x -= x % 16;
     y -= y % 16;
@@ -75,105 +75,98 @@ function Box() {
 }
 
 (function () {
-    var logo = new Image();
-    logo.setAttribute("id", "logo");
-    logo.onload = function () {
-        gamebar.appendChild(logo);
+    gamebar.appendChild(function () {
+        var face = document.createElement("div");
+        face.setAttribute("class", "face");
+        face.setAttribute("id", "normal");
 
-        gamebar.appendChild(function () {
-            var face = document.createElement("div");
-            face.setAttribute("class", "face");
-            face.setAttribute("id", "normal");
+        face.addEventListener("mousedown", function () {
+            face.id = "pressed";
+        }, false);
 
-            face.addEventListener("mousedown", function () {
-                face.id = "pressed";
-            }, false);
-
-            face.addEventListener("mouseleave", function () {
-                if (face.id == "pressed") {
-                    face.id = "normal";
-                }
-            }, false);
-
-            face.addEventListener("click", function () {
+        face.addEventListener("mouseleave", function () {
+            if (face.id == "pressed") {
                 face.id = "normal";
-                var clear = function () {
-                    gameEnd = false;
-                    boxes = [];
-                    timer.clear();
-
-                    ctx.clearRect(0, 0, screen.x, screen.y);
-
-                    content.style.marginTop = "0px";
-                    setup(screen.x, screen.y);
-                }();
-            }, false);
-
-            return face;
-        }());
-
-        var display = function (input) {
-            var disp = document.querySelector("#display");
-            if (!disp) {
-                disp = document.createElement("div");
-                disp.setAttribute("id", "display");
-                disp.style.display = "block";
-                disp.addEventListener("click", function (e) {
-                    e.stopPropagation();
-                }, false);
-                document.body.appendChild(disp);
-            }
-
-            var old = disp.firstChild ? disp.firstChild.innerHTML : null;
-
-            while (disp.hasChildNodes()) disp.removeChild(disp.lastChild);
-
-            var text = document.createElement("p");
-            text.innerHTML = input.heading;
-
-            disp.appendChild(text);
-            disp.appendChild(input.body);
-
-            if (old && input.heading === old || disp.style.display == "none") {
-                let vis = disp.style.display;
-                vis = vis == "none" ? "block" : "none";
-                disp.style.display = vis;
-            }
-        };
-
-        gamebar.appendChild(function () {
-            var info = document.createElement("div");
-            info.setAttribute("id", "info");
-
-            info.addEventListener("click", function (e) {
-                e.stopPropagation();
-                display(gameInfo());
-            }, false);
-
-            return info;
-        }());
-
-        gamebar.appendChild(function () {
-            var settings = document.createElement("div");
-            settings.setAttribute("id", "settings");
-
-            settings.addEventListener("click", function (e) {
-                e.stopPropagation();
-                display(gameSettings());
-            }, false);
-
-            return settings;
-        }());
-
-        document.addEventListener("click", function () {
-            var disp = document.querySelector("#display");
-            if (disp && disp.style.display != "none") {
-                disp.style.display = "none";
-                while (disp.hasChildNodes()) disp.removeChild(disp.lastChild);
             }
         }, false);
+
+        face.addEventListener("click", function () {
+            face.id = "normal";
+            var clear = function () {
+                gameEnd = false;
+                boxes = [];
+                timer.clear();
+
+                ctx.clearRect(0, 0, screen.x, screen.y);
+
+                content.style.marginTop = "0px";
+                setup(screen.x, screen.y);
+            }();
+        }, false);
+
+        return face;
+    }());
+
+    var display = function (input) {
+        var disp = document.querySelector("#display");
+        if (!disp) {
+            disp = document.createElement("div");
+            disp.setAttribute("id", "display");
+            disp.style.display = "block";
+            disp.addEventListener("click", function (e) {
+                e.stopPropagation();
+            }, false);
+            document.body.appendChild(disp);
+        }
+
+        var old = disp.firstChild ? disp.firstChild.innerHTML : null;
+
+        while (disp.hasChildNodes()) disp.removeChild(disp.lastChild);
+
+        var text = document.createElement("p");
+        text.innerHTML = input.heading;
+
+        disp.appendChild(text);
+        disp.appendChild(input.body);
+
+        if (old && input.heading === old || disp.style.display == "none") {
+            let vis = disp.style.display;
+            vis = vis == "none" ? "block" : "none";
+            disp.style.display = vis;
+        }
     };
-    logo.src = "assets/logo.png";
+
+    gamebar.appendChild(function () {
+        var info = document.createElement("div");
+        info.setAttribute("id", "info");
+
+        info.addEventListener("click", function (e) {
+            e.stopPropagation();
+            display(gameInfo());
+        }, false);
+
+        return info;
+    }());
+
+    gamebar.appendChild(function () {
+        var settings = document.createElement("div");
+        settings.setAttribute("id", "settings");
+
+        settings.addEventListener("click", function (e) {
+            e.stopPropagation();
+            display(gameSettings());
+        }, false);
+
+        return settings;
+    }());
+
+    document.addEventListener("click", function () {
+        var disp = document.querySelector("#display");
+        if (disp && disp.style.display != "none") {
+            disp.style.display = "none";
+            while (disp.hasChildNodes()) disp.removeChild(disp.lastChild);
+        }
+    }, false);
 })();
 
 var fieldPos;
@@ -391,8 +384,8 @@ function gameInfo() {
             return cps.toFixed(2);
         }(),
         "Progress": function () {
-            var percentage = flagged / totalMines;
-            percentage *= 100;
+            if (totalMines == 0) totalMines = 1;
+            var percentage = flagged * 100 / totalMines;
             return percentage.toFixed(2) + "%";
         }()
     };
@@ -420,7 +413,7 @@ function gameSettings() {
     form.action = "javascript:void(0);";
     form.method = "get";
 
-    var input = function (type, name, value, max, label) {
+    var input = function (type, name, value, min, max, label) {
         var lab = document.createElement("label");
         lab.innerHTML = label;
 
@@ -428,11 +421,12 @@ function gameSettings() {
         i.type = type;
         i.name = name;
         i.value = value;
+        i.required = true;
 
         i.oninput = function () {
             i.value = i.value.replace(/-/g, "");
             if (i.value == "0") {
-                i.value = 1;
+                i.value = min;
             }
             if (i.value > max) {
                 i.value = max;
@@ -447,9 +441,9 @@ function gameSettings() {
 
     var [x, y] = [Math.round(screen.x / 8), Math.round(screen.y / 8)];
     var fields = {
-        width: input("number", "width", 10, x, "Width"),
-        height: input("number", "height", 10, y, "Height"),
-        mines: input("number", "mines", 6, 25, "Chance for mines (1/n)"),
+        width: input("number", "width", 10, 5, x, "Width"),
+        height: input("number", "height", 10, 5, y, "Height"),
+        mines: input("number", "mines", 6, 1, 25, "Chance for mines (1/n)"),
     };
 
     var button = document.createElement("input");
