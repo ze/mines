@@ -1,3 +1,14 @@
+@import url("https://fonts.googleapis.com/css?family=Roboto");
+@import url("https://fonts.googleapis.com/icon?family=Material+Icons");
+
+* {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+
+    cursor: default;
+}
+
 *:focus {
     outline: none;
 }
@@ -9,10 +20,7 @@
 body {
     margin: 0;
     background-color: #B0B0B0;
-
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
+    transition: background-color .6s ease-in-out;
 }
 
 p {
@@ -28,29 +36,21 @@ p {
     width: auto;
     height: 2.5em;
     background-color: #C0C0C0;
-    box-shadow: 0 8px 4px -4px gray;
+    box-shadow: 0 4px 4px rgba(0, 0, 0, 0.2);
     align-items: center;
+    transition: all .6s ease-in-out;
 }
 
-#logo {
+i {
     position: absolute;
-    margin-left: 1em;
 }
 
 #info {
-    position: absolute;
-    right: 4em;
-    width: 2.5em;
-    height: 2.5em;
-    background: url("../assets/info.png") no-repeat;
+    right: 4vw;
 }
 
 #settings {
-    position: absolute;
-    right: 1.25em;
-    height: 2.5em;
-    width: 2.5em;
-    background: url("../assets/settings.png") no-repeat;
+    right: 1.25vw;
 }
 
 #display {
@@ -58,7 +58,7 @@ p {
     right: .5em;
     top: 3em;
 
-    min-width: 25%;
+    min-width: 15vw;
 
     border: 1px solid black;
     border-radius: 2px;
@@ -78,7 +78,7 @@ table, form {
 }
 
 td {
-    padding: .5em 0;
+    padding: .5vw 0;
 }
 
 input {
@@ -117,7 +117,7 @@ input[type=number]::-webkit-outer-spin-button {
     width: 26px;
     height: 26px;
     margin: auto;
-    background: url('../assets/sheet.png') no-repeat;
+    background: url("../assets/sheet.png") no-repeat;
     image-rendering: pixelated;
 }
 

@@ -59,7 +59,7 @@ var timer = {
 };
 
 function gameSize(x = window.innerWidth,
-        y = window.innerHeight - gamebar.clientHeight) {
+    y = window.innerHeight - gamebar.clientHeight) {
 
     x -= x % 16;
     y -= y % 16;
@@ -137,8 +137,10 @@ function Box() {
     };
 
     gamebar.appendChild(function () {
-        var info = document.createElement("div");
-        info.setAttribute("id", "info");
+        var info = document.createElement("i");
+        info.setAttribute("class", "material-icons");
+        info.innerHTML = "info";
+        info.style.right = "4em";
 
         info.addEventListener("click", function (e) {
             e.stopPropagation();
@@ -149,8 +151,10 @@ function Box() {
     }());
 
     gamebar.appendChild(function () {
-        var settings = document.createElement("div");
-        settings.setAttribute("id", "settings");
+        var settings = document.createElement("i");
+        settings.setAttribute("class", "material-icons");
+        settings.innerHTML = "settings";
+        settings.style.right = "1.5em";
 
         settings.addEventListener("click", function (e) {
             e.stopPropagation();
@@ -198,6 +202,22 @@ canvas.addEventListener("contextmenu", function (e) {
 
     redrawBox(b);
     victory();
+}, false);
+
+canvas.addEventListener("mouseenter", function (e) {
+    document.querySelector("body").style.backgroundColor = "#808080";
+
+    gamebar.style.backgroundColor = "#909090";
+    gamebar.style.opacity = ".2";
+    gamebar.style.boxShadow = "none";
+}, false);
+
+canvas.addEventListener("mouseleave", function (e) {
+    document.querySelector("body").style.backgroundColor = "#B0B0B0";
+
+    gamebar.style.backgroundColor = "#C0C0C0";
+    gamebar.style.boxShadow = "0 4px 4px rgba(0, 0, 0, 0.2)";
+    gamebar.style.opacity = "1";
 }, false);
 
 canvas.addEventListener("click", function () {
