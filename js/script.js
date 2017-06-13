@@ -14,6 +14,8 @@ img.onload = function () {
 };
 img.src = "assets/sheet.png";
 
+var firstClick = true;
+
 // sprite coordinates
 const faces = {
     box: [0, 0],
@@ -229,6 +231,11 @@ canvas.addEventListener("click", function () {
     if (b.exposed || b.flagged) return;
     b.clicked = true;
 
+    if(firstClick) {
+        b.isMine = false;
+        firstClick = false;
+    }
+
     if (b.isMine) {
         b.state = faces.loss;
     }
@@ -259,6 +266,7 @@ function setup(width, height) {
         }();
     }
     dist = null;
+    firstClick = true;
 
     drawGrid();
 }
